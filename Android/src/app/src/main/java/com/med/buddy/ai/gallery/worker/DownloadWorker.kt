@@ -51,12 +51,12 @@ import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.IOException
-import java.net.HttpURLConnection
-import java.net.URL
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
 
 private const val TAG = "AGDownloadWorker"
 
@@ -138,12 +138,11 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
           val bytesReadSizeBuffer: MutableList<Long> = mutableListOf()
           val bytesReadLatencyBuffer: MutableList<Long> = mutableListOf()
           for (file in allFiles) {
-            val url = URL(file.url)
-
-            val connection = url.openConnection() as HttpURLConnection
+            val client = OkHttpClient()
+            val requestBuilder = Request.Builder().url(file.url)
             if (accessToken != null) {
               Log.d(TAG, "Using access token: ${accessToken.subSequence(0, 10)}...")
-              connection.setRequestProperty("Authorization", "Bearer $accessToken")
+              requestBuilder.addHeader("Authorization", "Bearer $accessToken")
             }
 
             // Prepare output file's dir.
@@ -168,38 +167,22 @@ class DownloadWorker(context: Context, params: WorkerParameters) :
                 TAG,
                 "File '${file.fileName}' partial size: ${outputFileBytes}. Trying to resume download",
               )
-              connection.setRequestProperty("Range", "bytes=${outputFileBytes}-")
-            }
-            connection.connect()
-            Log.d(TAG, "response code: ${connection.responseCode}")
-
-            if (
-              connection.responseCode == HttpURLConnection.HTTP_OK ||
-                connection.responseCode == HttpURLConnection.HTTP_PARTIAL
-            ) {
-              val contentRange = connection.getHeaderField("Content-Range")
-
-              if (contentRange != null) {
-                // Parse the Content-Range header
-                val rangeParts = contentRange.substringAfter("bytes ").split("/")
-                val byteRange = rangeParts[0].split("-")
-                val startByte = byteRange[0].toLong()
-                val endByte = byteRange[1].toLong()
-
-                Log.d(
-                  TAG,
-                  "Content-Range: $contentRange. Start bytes: ${startByte}, end bytes: $endByte",
-                )
-
-                downloadedBytes += startByte
-              } else {
-                Log.d(TAG, "Download starts from beginning.")
-              }
-            } else {
-              throw IOException("HTTP error code: ${connection.responseCode}")
+              requestBuilder.addHeader("Range", "bytes=${outputFileBytes}-")
             }
 
-            val inputStream = connection.inputStream
+            val request = requestBuilder.build()
+            val response = client.newCall(request).execute()
+
+            if (!response.isSuccessful) {
+              throw IOException("HTTP error code: ${response.code}")
+            }
+
+            val body = response.body
+            if (body == null) {
+              throw IOException("Empty response body")
+            }
+
+            val inputStream = body.byteStream()
             val outputStream = FileOutputStream(outputFile, true /* append */)
 
             val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
