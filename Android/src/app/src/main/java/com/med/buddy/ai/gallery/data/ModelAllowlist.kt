@@ -98,6 +98,7 @@ data class AllowedModel(
       learnMoreUrl = "https://huggingface.co/${modelId}",
       llmSupportImage = llmSupportImage == true,
       llmSupportAudio = llmSupportAudio == true,
+      isZip = false,
     )
   }
 
