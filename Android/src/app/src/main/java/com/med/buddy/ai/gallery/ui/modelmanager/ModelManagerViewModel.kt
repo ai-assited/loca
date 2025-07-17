@@ -186,6 +186,11 @@ constructor(
     downloadRepository.downloadModel(model, onStatusUpdated = this::setDownloadStatus)
   }
 
+  fun downloadModelWithToken(task: Task, model: Model, token: String) {
+    model.accessToken = token
+    downloadModel(task, model)
+  }
+
   fun cancelDownloadModel(task: Task, model: Model) {
     downloadRepository.cancelDownloadModel(model)
     deleteModel(task = task, model = model)

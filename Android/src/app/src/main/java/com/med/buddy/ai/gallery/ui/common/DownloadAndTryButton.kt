@@ -27,6 +27,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.ClickableText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.rounded.ArrowForward
@@ -39,6 +40,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TextField
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -49,6 +51,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -112,7 +118,9 @@ fun DownloadAndTryButton(
   var showAgreementAckSheet by remember { mutableStateOf(false) }
   var showErrorDialog by remember { mutableStateOf(false) }
   var showMemoryWarning by remember { mutableStateOf(false) }
+  var showTokenInputDialog by remember { mutableStateOf(false) }
   val sheetState = rememberModalBottomSheetState()
+  val uriHandler = LocalUriHandler.current
 
   // A launcher for requesting notification permission.
   val permissionLauncher =
@@ -199,9 +207,11 @@ fun DownloadAndTryButton(
 
   // Function to kick off the authentication and token exchange flow.
   val startTokenExchange = {
-    val authRequest = modelManagerViewModel.getAuthorizationRequest()
-    val authIntent = modelManagerViewModel.authService.getAuthorizationRequestIntent(authRequest)
-    authResultLauncher.launch(authIntent)
+    // val authRequest = modelManagerViewModel.getAuthorizationRequest()
+    // val authIntent = modelManagerViewModel.authService.getAuthorizationRequestIntent(authRequest)
+    // authResultLauncher.launch(authIntent)
+    showTokenInputDialog = true
+    checkingToken = false
   }
 
   Button(
@@ -349,6 +359,58 @@ fun DownloadAndTryButton(
         Text("Try it", maxLines = 1)
       }
     }
+  }
+
+  if (showTokenInputDialog) {
+    var token by remember { mutableStateOf("") }
+    AlertDialog(
+      onDismissRequest = { showTokenInputDialog = false },
+      title = { Text("HuggingFace Token") },
+      text = {
+        Column {
+          val annotatedString = buildAnnotatedString {
+            append("Please enter your HuggingFace token. You can find your token in your ")
+            pushStringAnnotation(tag = "URL", annotation = "https://huggingface.co/settings/tokens")
+            withStyle(style = SpanStyle(color = MaterialTheme.colorScheme.primary)) {
+              append("HuggingFace settings")
+            }
+            pop()
+            append(".")
+          }
+          ClickableText(
+            text = annotatedString,
+            onClick = { offset ->
+              annotatedString.getStringAnnotations(tag = "URL", start = offset, end = offset)
+                .firstOrNull()?.let { annotation ->
+                  uriHandler.openUri(annotation.item)
+                }
+            }
+          )
+          TextField(
+            value = token,
+            onValueChange = { token = it },
+            label = { Text("Token") }
+          )
+        }
+      },
+      confirmButton = {
+        TextButton(
+          onClick = {
+            showTokenInputDialog = false
+            startDownload(token)
+          }
+        ) {
+          Text("Download")
+        }
+      },
+      dismissButton = {
+        TextButton(
+          onClick = { showTokenInputDialog = false }
+        ) {
+          Text("Cancel")
+        }
+      }
+    )
   }
 
   // A ModalBottomSheet composable that displays information about the user agreement
