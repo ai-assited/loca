@@ -1,1 +1,1 @@
-# Google AI Edge Gallery (Android)
+# Med Buddy AI Gallery (Android)

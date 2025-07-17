@@ -16,7 +16,7 @@
 -->
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.google.ai.edge.gallery"
+    package="com.med.buddy.ai.gallery"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-sdk
@@ -38,12 +38,12 @@
         android:required="false" />
 
     <application
-        android:name="com.google.ai.edge.gallery.GalleryApplication"
+        android:name="com.med.buddy.ai.gallery.GalleryApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
         android:icon="@mipmap/ic_launcher"
-        android:label="Edge Gallery"
+        android:label="Med Buddy v2"
         android:roundIcon="@mipmap/ic_launcher"
         android:supportsRtl="true"
         android:theme="@style/Theme.Gallery"
@@ -54,7 +54,7 @@
           Instead, just recompose the view.
          -->
         <activity
-            android:name="com.google.ai.edge.gallery.MainActivity"
+            android:name="com.med.buddy.ai.gallery.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.Gallery.SplashScreen"
             android:screenOrientation="portrait"
@@ -74,7 +74,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
-                <data android:scheme="com.google.ai.edge.gallery" />
+                <data android:scheme="com.med.buddy.ai.gallery" />
             </intent-filter>
         </activity>
 

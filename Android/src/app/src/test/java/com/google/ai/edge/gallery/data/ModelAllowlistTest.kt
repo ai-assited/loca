@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package com.google.ai.edge.gallery.data
+package com.med.buddy.ai.gallery.data
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse

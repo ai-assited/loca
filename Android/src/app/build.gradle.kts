@@ -28,7 +28,7 @@ plugins {
 }
 
 android {
-  namespace = "com.google.ai.edge.gallery"
+  namespace = "com.med.buddy.ai.gallery"
   compileSdk = 35
 
   defaultConfig {
