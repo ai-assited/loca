@@ -33,6 +33,8 @@ import com.med.buddy.ai.gallery.data.EMPTY_MODEL
 import com.med.buddy.ai.gallery.data.IMPORTS_DIR
 import com.med.buddy.ai.gallery.data.Model
 import com.med.buddy.ai.gallery.data.ModelAllowlist
+import com.med.buddy.ai.gallery.data.AllowedModel
+import com.med.buddy.ai.gallery.data.DefaultConfig
 import com.med.buddy.ai.gallery.data.ModelDownloadStatus
 import com.med.buddy.ai.gallery.data.ModelDownloadStatusType
 import com.med.buddy.ai.gallery.data.TASKS
@@ -642,25 +644,11 @@ constructor(
 
     viewModelScope.launch(Dispatchers.IO) {
       try {
-        // Load model allowlist json.
-        Log.d(TAG, "Loading model allowlist from internet...")
-        val data = getJsonResponse<ModelAllowlist>(url = MODEL_ALLOWLIST_URL)
-        var modelAllowlist: ModelAllowlist? = data?.jsonObj
-
-        if (modelAllowlist == null) {
-          Log.d(TAG, "Failed to load model allowlist from internet. Trying to load it from disk")
-          modelAllowlist = readModelAllowlistFromDisk()
-        } else {
-          Log.d(TAG, "Done: loading model allowlist from internet")
-          saveModelAllowlistToDisk(modelAllowlistContent = data?.textContent ?: "{}")
-        }
-
-        if (modelAllowlist == null) {
-          _uiState.update {
-            uiState.value.copy(loadingModelAllowlistError = "Failed to load model list")
-          }
-          return@launch
-        }
+        // Load Med Gemma model allowlist (hardcoded)
+        Log.d(TAG, "Loading Med Gemma model configuration...")
+        val modelAllowlist = createMedGemmaModelAllowlist()
+        
+        Log.d(TAG, "Done: loading Med Gemma model configuration")
 
         Log.d(TAG, "Allowlist: $modelAllowlist")
 
@@ -924,5 +912,38 @@ constructor(
 
     // Will also return true if model is partially downloaded.
     return downloadedFileExists || unzippedDirectoryExists
+  }
+
+  /**
+   * Creates a ModelAllowlist containing only MedGemma 4B Instruction Tuned model.
+   * This replaces the remote model allowlist with a hardcoded Med Gemma configuration.
+   */
+  private fun createMedGemmaModelAllowlist(): ModelAllowlist {
+    val medGemmaModel = AllowedModel(
+      name = "MedGemma 4B Instruction Tuned",
+      modelId = "google/medgemma-4b-it",
+      modelFile = "medgemma-4b-it.task",
+      description = "4B parameter MedGemma model fine-tuned for medical conversations and image analysis. Optimized for mobile devices and designed to assist with medical queries and image interpretation.",
+      sizeInBytes = 4_000_000_000L, // Approximately 4GB
+      version = "1.0.0",
+      defaultConfig = DefaultConfig(
+        topK = 40,
+        topP = 0.95f,
+        temperature = 0.7f,
+        accelerators = "gpu,cpu",
+        maxTokens = 2048
+      ),
+      taskTypes = listOf(
+        TASK_LLM_CHAT.type.id,
+        TASK_LLM_PROMPT_LAB.type.id,
+        TASK_LLM_ASK_IMAGE.type.id
+      ),
+      disabled = false,
+      llmSupportImage = true,
+      llmSupportAudio = false,
+      estimatedPeakMemoryInBytes = 6_000_000_000L // Approximately 6GB peak memory
+    )
+
+    return ModelAllowlist(models = listOf(medGemmaModel))
   }
 }
